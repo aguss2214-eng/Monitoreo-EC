@@ -1,0 +1,79 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>EC Ganadería</title>
+<meta name="theme-color" content="#08745c">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<style>
+:root{--g:#08745c;--bg:#f4f7f6;--red:#bd3741}*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:#17201e}
+header{background:var(--g);color:#fff;padding:16px;text-align:center;position:sticky;top:0;z-index:2}main{max-width:760px;margin:auto;padding:14px}.card{background:#fff;border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:0 2px 10px #0001}
+label{display:block;font-weight:700;margin:10px 0 4px}input,textarea,select{width:100%;padding:11px;border:1px solid #ccd7d3;border-radius:8px;font-size:16px}.row{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.btn{border:0;border-radius:9px;padding:13px;font-weight:700;font-size:15px;cursor:pointer}.primary{background:var(--g);color:#fff}.secondary{background:#e7efec}.danger{background:var(--red);color:#fff}.full{width:100%;margin-top:8px}
+.screen{display:none}.active{display:block}.nav{display:flex;gap:8px;margin-top:14px}.nav>*{flex:1}.scores{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.score{font-size:22px;padding:20px}.big{text-align:center;font-size:38px;font-weight:800}
+.item{border-bottom:1px solid #ddd;padding:12px 0}.metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px}.metrics div{background:#edf3f1;padding:10px;border-radius:8px}.hint{font-size:13px;color:#65736f}
+</style></head><body><header><b>EC Ganadería</b><div>Monitoreo de estado corporal</div></header><main>
+<section id="home" class="screen active"><div class="card"><h2>Inicio</h2><button class="btn primary full" onclick="nuevo()">＋ Nueva evaluación</button><button class="btn secondary full" onclick="historial()">Evaluaciones realizadas</button>
+<button id="installBtn" class="btn secondary full" style="display:none" onclick="installApp()">Instalar EC Ganadería</button>
+<p id="installHelp" class="hint">En Android: abrí esta app desde Chrome y elegí “Instalar app” o “Agregar a pantalla principal”.</p></div></section>
+<section id="datos" class="screen"><div class="card"><h2>Datos del establecimiento</h2>
+<label>Establecimiento</label><input id="est"><div class="row"><div><label>Partido</label><input id="partido"></div><div><label>Cuartel</label><input id="cuartel"></div></div>
+<div class="row"><div><label>Grupo / rodeo</label><input id="grupo"></div><div><label>Raza</label><input id="raza"></div></div><label>Propietario</label><input id="prop">
+<div class="row"><div><label>Teléfono</label><input id="tel"></div><div><label>Correo</label><input id="mail"></div></div><label>Dirección postal</label><input id="direccion">
+<div class="row"><div><label>Superficie total (ha)</label><input id="suptotal"></div><div><label>Superficie cría (ha)</label><input id="supcria"></div></div>
+<h3>Datos productivos</h3><div class="row"><div><label>Fecha</label><input id="fecha" type="date"></div><div><label>Total vientres pariendo</label><input id="vientres" type="number"></div></div>
+<div class="row"><div><label>Inicio parición</label><input id="paricion" type="date"></div><div><label>Terneros nacidos</label><input id="terneros" type="number"></div></div>
+<div class="row"><div><label>Vacas muertas mar-ago</label><input id="muertas" type="number"></div><div><label>% preñez</label><input id="prenez" type="number" step=".1"></div></div>
+<h3>Recurso en pastoreo (ha)</h3><div id="rec"></div><h3>Suplementación mar-ago</h3><div id="sup"></div>
+<div class="row"><div><label>Reposición propia</label><select id="repos"><option>NO</option><option>SI</option></select></div><div><label>Edad primer entore</label><select id="entore"><option>15</option><option>22</option><option>27</option></select></div></div>
+<div class="row"><div><label>Hipomagnesemia</label><input id="hipo" placeholder="NO o cantidad"></div><div><label>Festuca tóxica</label><input id="festuca" placeholder="NO o ha"></div></div>
+<div class="nav"><button class="btn secondary" onclick="show('home')">Atrás</button><button class="btn primary" onclick="show('transecta')">Transecta</button></div></div></section>
+<section id="transecta" class="screen"><div class="card"><h2>Transecta de estado corporal</h2><p class="hint">Tocá el EC correspondiente a cada vaca.</p><div id="scores" class="scores"></div><div id="count" class="big">0</div><p style="text-align:center">vacas evaluadas</p>
+<div class="nav"><button class="btn danger" onclick="undo()">Eliminar último</button><button class="btn primary" onclick="resultados()">Resultados</button></div></div></section>
+<section id="res" class="screen"><div class="card"><h2>Resultados</h2><div id="metrics" class="metrics"></div><label>Observaciones</label><textarea id="obs" rows="4"></textarea>
+<div class="nav"><button class="btn secondary" onclick="show('transecta')">Editar EC</button><button class="btn primary" onclick="guardar()">Guardar cambios</button></div>
+<button class="btn primary full" onclick="planilla()">Abrir planilla / Guardar PDF</button><button class="btn secondary full" onclick="compartir()">Compartir planilla</button></div></section>
+<section id="hist" class="screen"><div class="card"><h2>Evaluaciones realizadas</h2><div id="lista"></div><button class="btn secondary full" onclick="show('home')">Volver</button></div></section>
+</main><script>
+const vals=[1,1.5,2,2.5,3,3.5,4,4.5,5], resources=['Campo natural','Pastura pp','Pastura Deg','Verdeo','Promoción RG','Rastrojos'], supp=['Rollo','Silaje','Grano','Balanceado','Sales minerales'];let ec=[],editing=null;
+const $=x=>document.getElementById(x), value=x=>$(x).value; function show(x){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));$(x).classList.add('active');scrollTo(0,0)}
+$('scores').innerHTML=vals.map(v=>`<button class="btn secondary score" onclick="add(${v})">${String(v).replace('.',',')}</button>`).join('');
+$('rec').innerHTML=resources.map((x,i)=>`<label>${x}</label><input id="r${i}" type="number" step=".1">`).join('');$('sup').innerHTML=supp.map((x,i)=>`<label>${x}</label><input id="s${i}" placeholder="NO / cantidad">`).join('');
+function add(v){ec.push(v);$('count').textContent=ec.length;if(navigator.vibrate)navigator.vibrate(20)}function undo(){ec.pop();$('count').textContent=ec.length}
+function nuevo(){editing=null;ec=[];document.querySelectorAll('input,textarea').forEach(x=>x.value='');$('fecha').value=new Date().toISOString().slice(0,10);$('count').textContent=0;show('datos')}
+function data(){return {id:editing||String(Date.now()),est:value('est'),partido:value('partido'),cuartel:value('cuartel'),grupo:value('grupo'),raza:value('raza'),prop:value('prop'),tel:value('tel'),mail:value('mail'),direccion:value('direccion'),suptotal:value('suptotal'),supcria:value('supcria'),fecha:value('fecha'),vientres:value('vientres'),paricion:value('paricion'),terneros:value('terneros'),muertas:value('muertas'),prenez:value('prenez'),rec:resources.map((_,i)=>value('r'+i)),sup:supp.map((_,i)=>value('s'+i)),repos:value('repos'),entore:value('entore'),hipo:value('hipo'),festuca:value('festuca'),obs:value('obs'),ec:[...ec]}}
+function resultados(){if(!ec.length)return alert('Cargá al menos una vaca.');let avg=ec.reduce((a,b)=>a+b,0)/ec.length;$('metrics').innerHTML=`<div><b>Vacas evaluadas</b><br>${ec.length}</div><div><b>EC promedio</b><br>${avg.toFixed(2).replace('.',',')}</div><div><b>% EC ≤ 2,5</b><br>${(100*ec.filter(x=>x<=2.5).length/ec.length).toFixed(1)}%</div><div><b>% EC ≥ 3</b><br>${(100*ec.filter(x=>x>=3).length/ec.length).toFixed(1)}%</div>`;show('res')}
+function guardar(silent=false){let d=data(),a=JSON.parse(localStorage.getItem('evaluaciones')||'[]'),i=a.findIndex(x=>x.id===d.id);if(i>=0)a[i]=d;else a.push(d);localStorage.setItem('evaluaciones',JSON.stringify(a));editing=d.id;if(!silent)alert('Evaluación guardada.')}
+function historial(){let a=JSON.parse(localStorage.getItem('evaluaciones')||'[]');$('lista').innerHTML=a.length?a.slice().reverse().map(d=>`<div class="item"><b>${d.est||'Sin nombre'}</b> · ${d.fecha||''}<br>${d.grupo||''} · ${(d.ec||[]).length} vacas<br><button class="btn primary" onclick="editar('${d.id}')">Abrir / editar</button> <button class="btn secondary" onclick="abrirId('${d.id}')">Planilla</button></div>`).join(''):'No hay evaluaciones.';show('hist')}
+function fill(id,v){$(id).value=v??''}function editar(id){let d=JSON.parse(localStorage.getItem('evaluaciones')||'[]').find(x=>x.id===id);if(!d)return;editing=id;['est','partido','cuartel','grupo','raza','prop','tel','mail','direccion','suptotal','supcria','fecha','vientres','paricion','terneros','muertas','prenez','repos','entore','hipo','festuca','obs'].forEach(k=>fill(k,d[k]));(d.rec||[]).forEach((v,i)=>fill('r'+i,v));(d.sup||[]).forEach((v,i)=>fill('s'+i,v));ec=[...(d.ec||[])];$('count').textContent=ec.length;show('datos')}
+function abrirId(id){editar(id);resultados();setTimeout(planilla,80)}
+function fdate(s){if(!s)return '';let p=s.split('-');return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:s}
+function sheetHTML(d){
+ let counts=vals.map(v=>d.ec.filter(x=>x===v).length),avg=d.ec.length?d.ec.reduce((a,b)=>a+b,0)/d.ec.length:0,low=d.ec.length?100*d.ec.filter(x=>x<=2.5).length/d.ec.length:0,high=d.ec.length?100*d.ec.filter(x=>x>=3).length/d.ec.length:0;
+ return `<!doctype html><html><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Planilla EC - ${d.est}</title><style>
+ @page{size:A4 landscape;margin:8mm}*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#111;margin:0;font-size:10.5px}.head{display:flex;justify-content:space-between;align-items:end;border-bottom:3px solid #08745c;padding-bottom:5px;margin-bottom:7px}.head h1{font-size:18px;margin:0}.head b{color:#08745c}
+ table{width:100%;border-collapse:collapse;margin:6px 0}th,td{border:1px solid #777;padding:5px;vertical-align:middle}th{background:#e9f2ef}.label{font-weight:bold;background:#f3f5f4}.ec th{font-size:12px}.ec td{text-align:center;font-size:14px;font-weight:bold;height:30px}
+ .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}.metric{border:1px solid #08745c;border-radius:5px;padding:7px;text-align:center}.metric strong{display:block;font-size:15px;color:#08745c}.obs{min-height:38px}.actions{margin-bottom:8px}.actions button{padding:8px 12px;margin-right:5px}.foot{font-size:8px;color:#555;margin-top:4px}@media print{.actions{display:none}}
+ </style></head><body><div class=actions><button onclick="print()">Imprimir / Guardar como PDF</button></div>
+ <div class=head><div><h1>MONITOREO DE ESTADO CORPORAL</h1><b>Transecta previo al servicio</b></div><div>Fecha: <b>${fdate(d.fecha)}</b></div></div>
+ <table><tr><td class=label>Establecimiento</td><td>${d.est}</td><td class=label>Partido</td><td>${d.partido}</td><td class=label>Cuartel</td><td>${d.cuartel}</td></tr>
+ <tr><td class=label>Grupo / rodeo</td><td>${d.grupo}</td><td class=label>Sup. total</td><td>${d.suptotal} ha</td><td class=label>Sup. cría</td><td>${d.supcria} ha</td></tr>
+ <tr><td class=label>Propietario</td><td>${d.prop}</td><td class=label>Teléfono</td><td>${d.tel}</td><td class=label>Correo</td><td>${d.mail}</td></tr></table>
+ <table class=ec><tr><th>Estado corporal</th>${vals.map(v=>`<th>${String(v).replace('.',',')}</th>`).join('')}<th>Total</th></tr><tr><td class=label>Cantidad de vacas</td>${counts.map(n=>`<td>${n}</td>`).join('')}<td>${d.ec.length}</td></tr></table>
+ <table><tr><td class=label>Raza</td><td>${d.raza}</td><td class=label>Total vientres pariendo</td><td>${d.vientres}</td><td class=label>% preñez</td><td>${d.prenez}</td></tr>
+ <tr><td class=label>Inicio parición</td><td>${fdate(d.paricion)}</td><td class=label>Terneros nacidos</td><td>${d.terneros}</td><td class=label>Vacas muertas mar-ago</td><td>${d.muertas}</td></tr></table>
+ <div class=grid><table><tr><th>RECURSO EN PASTOREO</th><th>ha</th></tr>${resources.map((r,i)=>`<tr><td>${r}</td><td>${d.rec[i]||''}</td></tr>`).join('')}</table>
+ <table><tr><th>SUPLEMENTACIÓN MAR-AGO</th><th>Dato</th></tr>${supp.map((s,i)=>`<tr><td>${s}</td><td>${d.sup[i]||''}</td></tr>`).join('')}<tr><td>Reposición propia</td><td>${d.repos}</td></tr></table></div>
+ <table><tr><td class=label>Edad al primer entore</td><td>${d.entore} meses</td><td class=label>Hipomagnesemia / caídas</td><td>${d.hipo}</td><td class=label>Festuca tóxica</td><td>${d.festuca}</td></tr>
+ <tr><td class=label>Observaciones</td><td colspan=5 class=obs>${d.obs||''}</td></tr></table>
+ <div class=summary><div class=metric><strong>${d.ec.length}</strong>Vacas evaluadas</div><div class=metric><strong>${avg.toFixed(2).replace('.',',')}</strong>EC promedio</div><div class=metric><strong>${low.toFixed(1)}%</strong>EC ≤ 2,5</div><div class=metric><strong>${high.toFixed(1)}%</strong>EC ≥ 3</div></div>
+ <div class=foot>Planilla generada por EC Ganadería</div></body></html>`}
+function planilla(){guardar(true);let w=window.open('','_blank');w.document.write(sheetHTML(data()));w.document.close()}
+async function compartir(){guardar(true);let d=data(),html=sheetHTML(d),blob=new Blob([html],{type:'text/html'}),name=`Planilla_EC_${(d.est||'establecimiento').replace(/\s+/g,'_')}_${d.fecha||''}.html`,file=new File([blob],name,{type:'text/html'});if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({title:'Planilla EC',files:[file]}).catch(()=>{})}else{alert('Abrí la planilla y elegí “Imprimir / Guardar como PDF”. Luego podés compartir ese PDF desde el celular.');planilla()}}
+
+let deferredInstall=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;$('installBtn').style.display='block'});
+async function installApp(){if(deferredInstall){deferredInstall.prompt();await deferredInstall.userChoice;deferredInstall=null;$('installBtn').style.display='none'}else{alert('En Chrome: menú ⋮ → Instalar app / Agregar a pantalla principal. La app debe estar publicada por HTTPS para instalarse correctamente.')}}
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}))}
+</script></body></html>
